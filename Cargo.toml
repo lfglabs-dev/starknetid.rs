@@ -9,7 +9,7 @@ edition = "2021"
 async-trait = "0.1.73"
 lazy_static = "1.4.0"
 num-traits = "0.2.14"
-starknet = { git = "https://github.com/xJonathanLEI/starknet-rs", rev = "c974e5cb42e8d8344cee910b76005ec46b4dd3ed" }
+starknet = { git = "https://github.com/xJonathanLEI/starknet-rs", rev = "85906137d634c86b07de20fa33071e5cf186ce21" }
 
 [dev-dependencies]
 tokio = { version = "1.15.0", features = ["full"] }

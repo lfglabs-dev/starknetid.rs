@@ -3,7 +3,7 @@ use crate::{
     naming::{ResolvingError, SELECTOR_A2D, SELECTOR_D2A},
 };
 use async_trait::async_trait;
-use starknet::core::types::FieldElement;
+use starknet::core::types::Felt;
 use starknet::{
     core::types::{BlockId, BlockTag, FunctionCall},
     providers::Provider,
@@ -14,13 +14,13 @@ pub trait ProviderExt {
     async fn domain_to_address(
         &self,
         domain: &str,
-        contract_addr: FieldElement,
-    ) -> Result<FieldElement, ResolvingError>;
+        contract_addr: Felt,
+    ) -> Result<Felt, ResolvingError>;
 
     async fn address_to_domain(
         &self,
-        address: FieldElement,
-        contract_addr: FieldElement,
+        address: Felt,
+        contract_addr: Felt,
     ) -> Result<String, ResolvingError>;
 }
 
@@ -29,8 +29,8 @@ impl<T: Provider + Sync> ProviderExt for T {
     async fn domain_to_address(
         &self,
         domain: &str,
-        contract_addr: FieldElement,
-    ) -> Result<FieldElement, ResolvingError> {
+        contract_addr: Felt,
+    ) -> Result<Felt, ResolvingError> {
         if !domain.ends_with(".stark") {
             return Err(ResolvingError::InvalidDomain);
         }
@@ -42,7 +42,7 @@ impl<T: Provider + Sync> ProviderExt for T {
                         FunctionCall {
                             contract_address: contract_addr,
                             entry_point_selector: SELECTOR_D2A,
-                            calldata: vec![FieldElement::ONE, encoded, FieldElement::ZERO],
+                            calldata: vec![Felt::ONE, encoded, Felt::ZERO],
                         },
                         BlockId::Tag(BlockTag::Latest),
                     )
@@ -61,15 +61,15 @@ impl<T: Provider + Sync> ProviderExt for T {
 
     async fn address_to_domain(
         &self,
-        address: FieldElement,
-        contract_addr: FieldElement,
+        address: Felt,
+        contract_addr: Felt,
     ) -> Result<String, ResolvingError> {
         match self
             .call(
                 FunctionCall {
                     contract_address: contract_addr,
                     entry_point_selector: SELECTOR_A2D,
-                    calldata: vec![address, FieldElement::ZERO],
+                    calldata: vec![address, Felt::ZERO],
                 },
                 BlockId::Tag(BlockTag::Latest),
             )
