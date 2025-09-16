@@ -1,14 +1,13 @@
 use lazy_static::lazy_static;
 use num_traits::cast::ToPrimitive;
-use starknet::core::types::FieldElement;
+use starknet::core::types::{Felt, NonZeroFelt};
 
 const BASIC_ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz0123456789-";
 const BIG_ALPHABET: &str = "这来";
 
 lazy_static! {
-    static ref BASIC_ALPHABET_SIZE: FieldElement =
-        FieldElement::from(BASIC_ALPHABET.chars().count());
-    static ref BIG_ALPHABET_SIZE: FieldElement = FieldElement::from(BIG_ALPHABET.chars().count());
+    static ref BASIC_ALPHABET_SIZE: Felt = Felt::from(BASIC_ALPHABET.chars().count());
+    static ref BIG_ALPHABET_SIZE: Felt = Felt::from(BIG_ALPHABET.chars().count());
 }
 
 #[derive(Debug)]
@@ -28,9 +27,9 @@ fn extract_stars(mut domain: &str) -> (&str, usize) {
     (domain, k)
 }
 
-pub fn encode(domain: &str) -> Result<FieldElement, EncodingError> {
-    let mut mul = FieldElement::ONE;
-    let mut output = FieldElement::ZERO;
+pub fn encode(domain: &str) -> Result<Felt, EncodingError> {
+    let mut mul = Felt::ONE;
+    let mut output = Felt::ZERO;
     let mut wip_domain: String;
 
     if domain.chars().count() >= 2
@@ -80,23 +79,23 @@ pub fn encode(domain: &str) -> Result<FieldElement, EncodingError> {
 
             match found_basic {
                 Some(index) => {
-                    output = output + FieldElement::from(index) * mul;
-                    mul *= *BASIC_ALPHABET_SIZE + FieldElement::ONE;
+                    output = output + Felt::from(index) * mul;
+                    mul *= *BASIC_ALPHABET_SIZE + Felt::ONE;
                 }
                 None => {
                     let found_big = BIG_ALPHABET.chars().position(|alphabet_c| alphabet_c == c);
                     match found_big {
                         Some(index) => {
                             output = output + *BASIC_ALPHABET_SIZE * mul;
-                            mul *= *BASIC_ALPHABET_SIZE + FieldElement::ONE;
+                            mul *= *BASIC_ALPHABET_SIZE + Felt::ONE;
 
                             output = output
-                                + FieldElement::from(
-                                    mul * (FieldElement::from(index)
+                                + Felt::from(
+                                    mul * (Felt::from(index)
                                         + if i == wip_domain.chars().count() - 1 {
-                                            FieldElement::ONE
+                                            Felt::ONE
                                         } else {
-                                            FieldElement::ZERO
+                                            Felt::ZERO
                                         }),
                                 );
                             mul *= *BIG_ALPHABET_SIZE;
@@ -113,22 +112,25 @@ pub fn encode(domain: &str) -> Result<FieldElement, EncodingError> {
     Ok(output)
 }
 
-pub fn decode(mut felt: FieldElement) -> String {
+pub fn decode(mut felt: Felt) -> String {
     let mut decoded: String = String::new();
-    let basic_plus = FieldElement::from(BASIC_ALPHABET.chars().count() + 1);
-    let basic_len = FieldElement::from(BASIC_ALPHABET.chars().count());
-    let big_plus = FieldElement::from(BIG_ALPHABET.chars().count() + 1);
-    let big_len = FieldElement::from(BIG_ALPHABET.chars().count());
+    let basic_plus: NonZeroFelt =
+        NonZeroFelt::from_felt_unchecked(Felt::from(BASIC_ALPHABET.chars().count() + 1));
+    let basic_len = Felt::from(BASIC_ALPHABET.chars().count());
+    let big_plus: NonZeroFelt =
+        NonZeroFelt::from_felt_unchecked(Felt::from(BIG_ALPHABET.chars().count() + 1));
+    let big_len: NonZeroFelt =
+        NonZeroFelt::from_felt_unchecked(Felt::from(BIG_ALPHABET.chars().count()));
     let last_big = BIG_ALPHABET.chars().last().unwrap();
-    while felt != FieldElement::ZERO {
-        let code = felt % basic_plus;
-        felt = felt.floor_div(basic_plus);
+    while felt != Felt::ZERO {
+        let code = felt.mod_floor(&basic_plus);
+        felt = felt.floor_div(&basic_plus);
         if code == basic_len {
-            let next_felt = felt.floor_div(big_plus);
-            if next_felt == FieldElement::ZERO {
-                let code2 = felt % big_plus;
+            let next_felt = felt.floor_div(&big_plus);
+            if next_felt == Felt::ZERO {
+                let code2 = felt.mod_floor(&big_plus);
                 felt = next_felt;
-                decoded.push(if code2 == FieldElement::ZERO {
+                decoded.push(if code2 == Felt::ZERO {
                     BASIC_ALPHABET.chars().next().unwrap()
                 } else {
                     last_big
@@ -137,16 +139,16 @@ pub fn decode(mut felt: FieldElement) -> String {
                 decoded.push(
                     BIG_ALPHABET
                         .chars()
-                        .nth((felt % big_len).to_big_decimal(0).to_usize().unwrap())
+                        .nth((felt.mod_floor(&big_len)).to_biguint().to_usize().unwrap())
                         .unwrap(),
                 );
-                felt = felt.floor_div(big_len);
+                felt = felt.floor_div(&big_len);
             }
         } else {
             decoded.push(
                 BASIC_ALPHABET
                     .chars()
-                    .nth(code.to_big_decimal(0).to_usize().unwrap())
+                    .nth(code.to_biguint().to_usize().unwrap())
                     .unwrap(),
             );
         }

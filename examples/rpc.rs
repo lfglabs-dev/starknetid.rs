@@ -1,25 +1,25 @@
 use starknet::{
-    core::types::FieldElement,
+    core::types::Felt,
     providers::{jsonrpc::HttpTransport, JsonRpcClient},
 };
 use starknet_id::{
-    naming::{ResolvingError, SEPOLIA_CONTRACT},
+    naming::{ResolvingError, MAINNET_CONTRACT},
     ProviderExt,
 };
 use url::Url;
 
 fn create_jsonrpc_client() -> JsonRpcClient<HttpTransport> {
     let rpc_url =
-        std::env::var("STARKNET_RPC").unwrap_or("https://sepolia.rpc.starknet.id/".into());
+        std::env::var("STARKNET_RPC").unwrap_or("https://rpc.starknet.id/rpc/v0_9".into());
     JsonRpcClient::new(HttpTransport::new(Url::parse(&rpc_url).unwrap()))
 }
 
 #[tokio::main]
 async fn main() {
-    let client_sepolia = create_jsonrpc_client();
-    println!("On sepolia:");
-    let addr = client_sepolia
-        .domain_to_address("th0rgal.stark", SEPOLIA_CONTRACT)
+    let client_mainnet = create_jsonrpc_client();
+    println!("On mainnet:");
+    let addr = client_mainnet
+        .domain_to_address("th0rgal.stark", MAINNET_CONTRACT)
         .await;
     match addr {
         Ok(addr) => println!("address: 0x{:x}", addr),
@@ -31,13 +31,11 @@ async fn main() {
         },
     }
 
-    let domain_result = client_sepolia
+    let domain_result = client_mainnet
         .address_to_domain(
-            FieldElement::from_hex_be(
-                "0x0403c80a49f16Ed8Ecf751f4B3Ad62CC8f85EbEB2d40DC3B4377a089b438995D",
-            )
-            .unwrap(),
-            SEPOLIA_CONTRACT,
+            Felt::from_hex("0x00a00373a00352aa367058555149b573322910d54fcdf3a926e3e56d0dcb4b0c")
+                .unwrap(),
+            MAINNET_CONTRACT,
         )
         .await;
     match domain_result {
