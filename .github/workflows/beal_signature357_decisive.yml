@@ -17,21 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  mod5-level19683-raw:
+  modfrhil-attributes:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 72b19b2e27141c2cfe94bf2727a8c18a0392ea3c
+          ref: eadc80f07c2d26adaeb3e0edfa3f292904dccd24
           path: beal
-      - name: Apply parity and removed-prime filters on the raw Brandt module
+      - name: Inspect the independently computed newspace attributes
         run: >-
-          python3 beal/scripts/run_signature_357_magma_mod5_19683_raw.py
-          > mod5-19683-raw.json
+          python3 beal/scripts/run_signature_357_magma_modfrhil_attributes.py
+          > modfrhil-attributes.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-mod5-19683-raw
-          path: mod5-19683-raw.json
+          name: signature357-modfrhil-attributes
+          path: modfrhil-attributes.json
           if-no-files-found: error
