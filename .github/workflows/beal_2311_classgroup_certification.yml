@@ -78,7 +78,7 @@ jobs:
           print("NFCERTIFY_OBSTRUCTIONS=", NFbad);
           if (#NFbad, error("maximal-order certification failed"));
           print("PHASE=bnfinit-start");
-          B = bnfinit(NF, 1, [0,0,0,0,0,1]);
+          B = bnfinit(Tred, 1, [0,0,0,0,0,1]);
           print("CLASS_GROUP=", B.clgp);
           print("REGULATOR=", B.reg);
           print("PHASE=class-quotient-certification-start");
@@ -95,10 +95,9 @@ jobs:
 
           set +e
           timeout --signal=TERM --kill-after=60s 19800s gp -q certify.gp 2>&1 | tee "classgroup-${LABEL}.log"
-          status=${PIPESTATUS[0]}
+          gp_status=${PIPESTATUS[0]}
           set -e
-          echo "exit_status=${status}" >> "$GITHUB_OUTPUT"
-          printf '%s\n' "${status}" > "classgroup-${LABEL}.status"
+          printf '%s\n' "${gp_status}" > "classgroup-${LABEL}.status"
 
           python3 - <<'PY'
           import hashlib, json, os, pathlib, re
@@ -110,8 +109,20 @@ jobs:
               return None if match is None else match.group(1).strip()
           status_path = pathlib.Path(f"classgroup-{label}.status")
           exit_status = int(status_path.read_text().strip()) if status_path.exists() else -1
+          gp_error = "***" in text or "I/O: closing file" in text
+          checks = {
+              "gp_exit_zero": exit_status == 0,
+              "no_gp_error_text": not gp_error,
+              "degree_is_36": marker("COMPOSITUM_DEGREE") == "36",
+              "maximal_order_certified": marker("NFCERTIFY_OBSTRUCTIONS") == "[]",
+              "class_group_present": marker("CLASS_GROUP") is not None,
+              "class_quotient_certified": marker("CLASS_QUOTIENT_CERTIFIED") == "1",
+              "full_bnf_certified": marker("FULL_BNF_CERTIFIED") == "1",
+              "result_marker": marker("RESULT") == "UNCONDITIONALLY_CERTIFIED",
+          }
+          complete = all(checks.values())
           body = {
-              "schema_version": 1,
+              "schema_version": 2,
               "label": label,
               "source_paper": "Freitas--Naskrecki--Stoll, The generalized Fermat equation with exponents 2, 3, n",
               "degree12_polynomial": os.environ["F12"],
@@ -122,18 +133,23 @@ jobs:
               "field_discriminant": marker("FIELD_DISCRIMINANT"),
               "nfcertify_obstructions": marker("NFCERTIFY_OBSTRUCTIONS"),
               "class_group": marker("CLASS_GROUP"),
+              "regulator": marker("REGULATOR"),
               "class_quotient_certified": marker("CLASS_QUOTIENT_CERTIFIED"),
               "full_bnf_certified": marker("FULL_BNF_CERTIFIED"),
               "result": marker("RESULT"),
-              "exit_status": exit_status,
-              "complete": exit_status == 0 and marker("RESULT") == "UNCONDITIONALLY_CERTIFIED",
+              "gp_exit_status": exit_status,
+              "checks": checks,
+              "complete": complete,
               "log_sha256": hashlib.sha256(text.encode()).hexdigest(),
           }
           encoded = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
           body["certificate_sha256"] = hashlib.sha256(encoded).hexdigest()
           pathlib.Path(f"classgroup-{label}.json").write_text(json.dumps(body, sort_keys=True, indent=2) + "\n")
+          pathlib.Path(f"classgroup-{label}.complete").write_text("true\n" if complete else "false\n")
           print(json.dumps(body, sort_keys=True, indent=2))
           PY
+
+          echo "complete=$(tr -d '\n' < "classgroup-${LABEL}.complete")" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -143,9 +159,10 @@ jobs:
             certify.gp
             classgroup-${{ matrix.label }}.log
             classgroup-${{ matrix.label }}.status
+            classgroup-${{ matrix.label }}.complete
             classgroup-${{ matrix.label }}.json
           if-no-files-found: error
 
       - name: Require unconditional certification
-        if: steps.certify.outputs.exit_status != '0'
+        if: always() && steps.certify.outputs.complete != 'true'
         run: exit 1
