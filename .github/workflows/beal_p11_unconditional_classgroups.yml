@@ -1,0 +1,92 @@
+name: Beal p11 unconditional degree-36 class groups
+
+on:
+  push:
+    branches:
+      - research/beal-p11-unconditional-classgroups
+    paths:
+      - "scripts/run_p11_pari_classgroup_certification.py"
+      - ".github/workflows/beal_p11_unconditional_classgroups.yml"
+  pull_request:
+    paths:
+      - "scripts/run_p11_pari_classgroup_certification.py"
+      - ".github/workflows/beal_p11_unconditional_classgroups.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beal-p11-unconditional-classgroups-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        field: [54a1, 96a1, 864a1, 864b1, 864c1]
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install PARI/GP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pari-gp
+          gp --version
+      - name: Run bnfinit and unconditional bnfcertify
+        id: certify
+        shell: bash
+        run: |
+          set +e
+          /usr/bin/time -v python3 scripts/run_p11_pari_classgroup_certification.py \
+            --field "${{ matrix.field }}" \
+            --program-output "p11-${{ matrix.field }}.gp" \
+            > "p11-${{ matrix.field }}.log" 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          tail -n 200 "p11-${{ matrix.field }}.log"
+          exit 0
+      - name: Summarize retained markers
+        if: always()
+        run: |
+          python3 - "${{ matrix.field }}" <<'PY'
+          import json, pathlib, re, sys
+          label=sys.argv[1]
+          path=pathlib.Path(f"p11-{label}.log")
+          text=path.read_text(errors="replace") if path.exists() else ""
+          def marker(name):
+              m=re.search(rf"^{re.escape(name)}=(.*)$", text, re.M)
+              return None if m is None else m.group(1).strip()
+          value={
+              "schema_version":1,
+              "field":label,
+              "absolute_degree":marker("ABSOLUTE_DEGREE"),
+              "field_discriminant":marker("FIELD_DISCRIMINANT"),
+              "class_number":marker("CLASS_NUMBER"),
+              "class_group_cyclic_factors":marker("CLASS_GROUP_CYCLIC_FACTORS"),
+              "quotient_certificate":marker("QUOTIENT_CERTIFICATE"),
+              "full_certificate":marker("FULL_CERTIFICATE"),
+              "bnf_binary_present":pathlib.Path(f"p11-{label}-bnf.bin").exists(),
+              "log_tail":text[-12000:],
+          }
+          pathlib.Path(f"p11-{label}-summary.json").write_text(
+              json.dumps(value,sort_keys=True,indent=2)+"\n"
+          )
+          print(json.dumps(value,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: "beal-p11-classgroup-${{ matrix.field }}"
+          path: |
+            p11-${{ matrix.field }}.gp
+            p11-${{ matrix.field }}.log
+            p11-${{ matrix.field }}-summary.json
+            p11-${{ matrix.field }}-bnf.bin
+          if-no-files-found: warn
+      - name: Require unconditional certificate
+        if: steps.certify.outputs.status == '0'
+        run: grep -q '^FULL_CERTIFICATE=1$' "p11-${{ matrix.field }}.log"
