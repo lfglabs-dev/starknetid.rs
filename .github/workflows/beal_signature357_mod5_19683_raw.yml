@@ -1,0 +1,36 @@
+name: Beal signature 357 level 19683 raw Brandt filter
+
+on:
+  push:
+    branches:
+      - research/beal-signature357-probe
+    paths:
+      - ".github/workflows/beal_signature357_mod5_19683_raw.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beal-signature357-mod5-19683-raw
+  cancel-in-progress: false
+
+jobs:
+  raw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: Th0rgal/beal-conjecture-lean
+          ref: 72b19b2e27141c2cfe94bf2727a8c18a0392ea3c
+          path: beal
+      - name: Apply parity and removed-prime filters on the raw Brandt module
+        run: >-
+          python3 beal/scripts/run_signature_357_magma_mod5_19683_raw.py
+          > mod5-19683-raw.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signature357-mod5-19683-raw
+          path: mod5-19683-raw.json
+          if-no-files-found: error
