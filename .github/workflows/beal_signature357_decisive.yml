@@ -17,72 +17,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  mod5-prime13-semilinear-level137781:
+  mod5-semilinear-chain-level137781:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 8f0a00167bc3fdfea613855bd4b915645944b453
+          ref: a85e7ba70e26f290ac768746b8c4a87738baeb60
           path: beal
-      - name: Apply prime-13 local and semilinear conditions to every parity space
+      - name: Intersect all split-prime local and semilinear conditions
         run: >-
-          python3 beal/scripts/run_signature_357_magma_mod5_137781_prime13_semilinear.py
-          > mod5-137781-prime13-semilinear.json
+          python3 beal/scripts/run_signature_357_magma_mod5_137781_semilinear_chain.py
+          > mod5-137781-semilinear-chain.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-mod5-137781-prime13-semilinear
-          path: mod5-137781-prime13-semilinear.json
+          name: signature357-mod5-137781-semilinear-chain
+          path: mod5-137781-semilinear-chain.json
           if-no-files-found: error
 
-  mod5-split-chain-level137781:
+  magma-hecke-raw-api:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 8858bd2091dea5125a9927cba86f3d974f7074bb
+          ref: 1290b57f0a6295d90fd9ed0ccbe73830724250f7
           path: beal
-      - name: Install PARI/GP
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pari-gp
-      - name: Produce complete split-prime local HGM data
-        working-directory: beal
+      - name: Probe HeckeMatrixRaw on a tiny definite Hilbert space
         run: >-
-          python3 scripts/produce_signature_357_mod5_complete_local.py
-          > ../mod5-complete-local.json
-      - name: Intersect the 13,29,41,43 trace unions on each parity eigenspace
-        working-directory: beal
-        run: >-
-          python3 scripts/run_signature_357_magma_mod5_split_parity_chain.py
-          --local-data ../mod5-complete-local.json
-          > ../mod5-137781-split-chain.json
+          python3 beal/scripts/run_signature_357_magma_hecke_raw_api_probe.py
+          > magma-hecke-raw-api.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-mod5-137781-split-chain
-          path: |
-            mod5-complete-local.json
-            mod5-137781-split-chain.json
-          if-no-files-found: error
-
-  mod5-level19683-ambient:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          repository: Th0rgal/beal-conjecture-lean
-          ref: 8858bd2091dea5125a9927cba86f3d974f7074bb
-          path: beal
-      - name: Test the indefinite ambient space at norms 8 and 7
-        run: >-
-          python3 beal/scripts/run_signature_357_magma_mod5_19683_ambient.py
-          > mod5-19683-ambient.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: signature357-mod5-19683-ambient
-          path: mod5-19683-ambient.json
+          name: signature357-magma-hecke-raw-api
+          path: magma-hecke-raw-api.json
           if-no-files-found: error
