@@ -1,0 +1,87 @@
+name: Beal sparse Hecke interface probe
+
+on:
+  push:
+    branches:
+      - research/beal-heckeimages-probe
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Probe Magma sparse Hilbert-Hecke interfaces
+        run: |
+          python3 - <<'PY'
+          import html, http.cookiejar, re, urllib.parse, urllib.request
+
+          url='https://magma.maths.usyd.edu.au/calc/'
+          code=r'''
+          _<x>:=PolynomialRing(Rationals());
+          K<z>:=NumberField(x^2-5); OK:=Integers(K);
+          I5:=Factorisation(5*OK)[1][1]; I2:=Factorisation(2*OK)[1][1];
+          M0:=HilbertCuspForms(K,3^2*I5^2); M:=NewSubspace(M0);
+          printf "TYPE=%o\n",Type(M);
+          printf "DIM=%o\n",Dimension(M);
+          try
+            H:=HeckeImages(M,1,[I2],1);
+            printf "HECKEIMAGES_IDEALS_OK=%o\n",H;
+          catch e
+            printf "HECKEIMAGES_IDEALS_ERROR=%o\n",e;
+          end try;
+          try
+            H2:=HeckeImages(M,1,4,1);
+            printf "HECKEIMAGES_BOUND_OK=%o\n",H2;
+          catch e
+            printf "HECKEIMAGES_BOUND_ERROR=%o\n",e;
+          end try;
+          try
+            T3:=HeckeOperator(M,I2,1);
+            printf "HECKEOPERATOR_THREE_OK=%o\n",T3;
+          catch e
+            printf "HECKEOPERATOR_THREE_ERROR=%o\n",e;
+          end try;
+          try
+            D1:=NewformsOfDegree1(M);
+            printf "DEGREE1_COUNT=%o\n",#D1;
+          catch e
+            printf "DEGREE1_ERROR=%o\n",e;
+          end try;
+          '''
+
+          jar=http.cookiejar.CookieJar()
+          opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+          req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 research-probe'})
+          with opener.open(req,timeout=120) as r:
+              landing=r.read().decode(errors='replace'); landing_url=r.geturl()
+          form=re.search(r'<form\b([^>]*)>(.*?)</form>',landing,flags=re.I|re.S)
+          attrs,body=form.groups()
+          am=re.search(r'\baction=["\']([^"\']*)',attrs,flags=re.I)
+          action=url if am is None else urllib.parse.urljoin(url,html.unescape(am.group(1)))
+          hidden={}
+          for tag in re.findall(r'<input\b[^>]*>',body,flags=re.I):
+              tm=re.search(r'\btype=["\']([^"\']*)',tag,flags=re.I)
+              nm=re.search(r'\bname=["\']([^"\']*)',tag,flags=re.I)
+              vm=re.search(r'\bvalue=["\']([^"\']*)',tag,flags=re.I)
+              if tm and tm.group(1).lower()=='hidden' and nm:
+                  hidden[html.unescape(nm.group(1))]='' if vm is None else html.unescape(vm.group(1))
+          hidden['input']=code
+          parsed=urllib.parse.urlparse(action)
+          post=urllib.request.Request(action,data=urllib.parse.urlencode(hidden).encode(),headers={
+              'User-Agent':'Mozilla/5.0 research-probe','Content-Type':'application/x-www-form-urlencoded',
+              'Referer':landing_url,'Origin':f'{parsed.scheme}://{parsed.netloc}'})
+          with opener.open(post,timeout=300) as r:
+              page=r.read().decode(errors='replace')
+          text=html.unescape(re.sub(r'<[^>]+>','',page))
+          open('magma-heckeimages-probe.txt','w').write(text)
+          print(text[-12000:])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: beal-heckeimages-probe
+          path: magma-heckeimages-probe.txt
+          if-no-files-found: error
