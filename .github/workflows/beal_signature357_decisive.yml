@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 0a6acaf7faa0d28ae2e37f6cb55605d1b285ffc1
+          ref: 0300e08d946ab80f7c9422eb6e02d628abbf54d9
           path: beal
       - name: Compute fixed-7 level-(3,3) prime-2 parity decomposition
         run: >-
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 376beb5d1271cdf4e4e9b88ff896d8240e8e6c22
+          ref: d3624b7270c63ab51b0b6541629c52f34e0e7305
           path: beal
       - name: Compute mod-5 norm-8 parity decomposition
         working-directory: beal/scripts
