@@ -17,21 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  mod5-level19683-ambient-raw:
+  mod5-level19683-hecke-cache:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 459324defa4236537519fad73b70299aef8a9ab1
+          ref: 250e83a7f4bc62506af22e735dd1ae833abda117
           path: beal
-      - name: Force construction, inspect degeneracy maps and compute ambient raw Hecke
+      - name: Catch the norm-8 failure and inspect every partial Hecke cache
         run: >-
-          python3 beal/scripts/run_signature_357_magma_mod5_19683_ambient_raw_probe.py
-          > mod5-19683-ambient-raw.json
+          python3 beal/scripts/run_signature_357_magma_mod5_19683_hecke_cache_probe.py
+          > mod5-19683-hecke-cache.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-mod5-19683-ambient-raw
-          path: mod5-19683-ambient-raw.json
+          name: signature357-mod5-19683-hecke-cache
+          path: mod5-19683-hecke-cache.json
           if-no-files-found: error
