@@ -78,7 +78,7 @@ jobs:
           print("NFCERTIFY_OBSTRUCTIONS=", NFbad);
           if (#NFbad, error("maximal-order certification failed"));
           print("PHASE=bnfinit-start");
-          B = bnfinit(Tred, 1, [0,0,0,0,0,1]);
+          B = bnfinit(Tred, 1);
           print("CLASS_GROUP=", B.clgp);
           print("REGULATOR=", B.reg);
           print("PHASE=class-quotient-certification-start");
