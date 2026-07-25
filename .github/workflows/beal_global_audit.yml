@@ -43,3 +43,5 @@ jobs:
           lake env lean BealUnified/ExponentReduction.lean
           lake env lean BealUnified/Research/CyclotomicAudit.lean
           lake env lean BealUnified/Research/Signature457.lean
+
+# This mirror is intentionally pinned to one research commit.
