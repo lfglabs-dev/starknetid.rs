@@ -17,40 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  raw-hecke-restriction-probe:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          repository: Th0rgal/beal-conjecture-lean
-          ref: 767d4aadc25eac4dd4493c53c1accd30f8e7503e
-          path: beal
-      - name: Compare raw and ordinary Hecke restrictions
-        run: >-
-          python3 beal/scripts/run_signature_357_magma_hecke_raw_restriction_probe.py
-          > magma-hecke-raw-restriction.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: signature357-magma-hecke-raw-restriction
-          path: magma-hecke-raw-restriction.json
-          if-no-files-found: error
-
-  mod5-semilinear-chain-level137781:
+  mod5-level19683-raw:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: a85e7ba70e26f290ac768746b8c4a87738baeb60
+          ref: 72b19b2e27141c2cfe94bf2727a8c18a0392ea3c
           path: beal
-      - name: Intersect all split-prime local and semilinear conditions
+      - name: Apply parity and removed-prime filters on the raw Brandt module
         run: >-
-          python3 beal/scripts/run_signature_357_magma_mod5_137781_semilinear_chain.py
-          > mod5-137781-semilinear-chain.json
+          python3 beal/scripts/run_signature_357_magma_mod5_19683_raw.py
+          > mod5-19683-raw.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-mod5-137781-semilinear-chain
-          path: mod5-137781-semilinear-chain.json
+          name: signature357-mod5-19683-raw
+          path: mod5-19683-raw.json
           if-no-files-found: error
