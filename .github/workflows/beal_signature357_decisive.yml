@@ -1,4 +1,4 @@
-name: Beal signature 3511 fixed-11 probes
+name: Beal signature 3511 paired fixed-11 probes
 
 on:
   push:
@@ -13,32 +13,31 @@ permissions:
   contents: read
 
 concurrency:
-  group: beal-signature3511-fixed11-${{ github.ref }}
+  group: beal-signature3511-paired-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  fixed11-level:
+  paired-prime:
     strategy:
       fail-fast: false
       matrix:
-        level: ["2,2", "2,3", "3,2", "3,3"]
-        prime: [13, 29]
+        level: ["2,2", "2,3", "3,2"]
+        prime: [19, 29, 31, 41]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 1b2ff227331a4db3ec2116bd848746c029abc8d1
+          ref: 636e6a77b4cdee82d51149113bb7ea0199acae33
           path: beal
-      - name: Test the complete fixed-11 residual newspace
+      - name: Apply paired Galois-conjugate trace condition
         run: >-
-          python3 beal/scripts/run_signature_3511_magma_fixed11_residual.py
-          --level "${{ matrix.level }}"
-          --prime "${{ matrix.prime }}"
-          > "fixed11-${{ matrix.level }}-${{ matrix.prime }}.json"
+          python3 beal/scripts/run_signature_3511_magma_fixed11_split_pair.py
+          --level "${{ matrix.level }}" --prime "${{ matrix.prime }}"
+          > "signature3511-pair-${{ matrix.level }}-${{ matrix.prime }}.json"
       - uses: actions/upload-artifact@v4
         with:
-          name: "signature3511-fixed11-${{ matrix.level }}-${{ matrix.prime }}"
-          path: "fixed11-${{ matrix.level }}-${{ matrix.prime }}.json"
+          name: "signature3511-fixed11-pair-${{ matrix.level }}-${{ matrix.prime }}"
+          path: "signature3511-pair-${{ matrix.level }}-${{ matrix.prime }}.json"
           if-no-files-found: error
