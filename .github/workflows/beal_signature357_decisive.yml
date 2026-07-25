@@ -17,21 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  modfrhil-attributes:
+  mod5-level19683-definite:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: eadc80f07c2d26adaeb3e0edfa3f292904dccd24
+          ref: bb7be2b475438071f9afedd3f2475e82cf1fdefe
           path: beal
-      - name: Inspect the independently computed newspace attributes
+      - name: Force the newspace onto a definite quaternion order
         run: >-
-          python3 beal/scripts/run_signature_357_magma_modfrhil_attributes.py
-          > modfrhil-attributes.json
+          python3 beal/scripts/run_signature_357_magma_mod5_19683_definite_probe.py
+          > mod5-19683-definite.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-modfrhil-attributes
-          path: modfrhil-attributes.json
+          name: signature357-mod5-19683-definite
+          path: mod5-19683-definite.json
           if-no-files-found: error
