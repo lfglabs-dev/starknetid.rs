@@ -65,6 +65,30 @@ jobs:
           path: "mod5-norm8-${{ matrix.norm }}.json"
           if-no-files-found: error
 
+  mod5-inert-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: Th0rgal/beal-conjecture-lean
+          ref: agent/signature-345-357-certificates
+          path: beal
+      - name: Install PARI/GP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pari-gp
+      - name: Produce inert-prime local HGM traces at 11 and 23
+        working-directory: beal
+        run: >-
+          python3 scripts/produce_signature_357_mod5_inert_local.py
+          > ../mod5-inert-local.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signature357-mod5-inert-local
+          path: mod5-inert-local.json
+          if-no-files-found: error
+
   lmfdb-level91125:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -91,18 +115,12 @@ jobs:
               cur.execute("""
                   SELECT column_name, data_type
                   FROM information_schema.columns
-                  WHERE table_schema='public' AND table_name='hmf_hecke'
-                  ORDER BY ordinal_position
+                  WHERE table_schema='public' AND table_name IN ('hmf_forms','hmf_hecke')
+                  ORDER BY table_name, ordinal_position
               """)
-              result['hmf_hecke_schema'] = [dict(name=r[0], type=r[1]) for r in cur.fetchall()]
+              result['schema'] = [dict(name=r[0], type=r[1]) for r in cur.fetchall()]
 
-              cur.execute("""
-                  SELECT label, level_label, level_norm, level_ideal,
-                         dimension, is_cm, is_base_change
-                  FROM hmf_forms
-                  WHERE field_label=%s AND level_norm=%s
-                  ORDER BY level_label, label
-              """, ('2.2.5.1', 91125))
+              cur.execute("SELECT * FROM hmf_forms WHERE field_label=%s AND level_norm=%s ORDER BY label", ('2.2.5.1', 91125))
               cols = [d.name for d in cur.description]
               forms = [dict(zip(cols, row)) for row in cur.fetchall()]
               result['forms'] = forms
@@ -112,13 +130,12 @@ jobs:
               if labels:
                   cur.execute("SELECT * FROM hmf_hecke WHERE label = ANY(%s) ORDER BY label", (labels,))
                   hcols = [d.name for d in cur.description]
-                  result['hecke_rows'] = [dict(zip(hcols, row), default=str) if False else dict(zip(hcols, row)) for row in cur.fetchall()]
+                  result['hecke_rows'] = [dict(zip(hcols, row)) for row in cur.fetchall()]
               else:
                   result['hecke_rows'] = []
 
           conn.close()
 
-          # PostgreSQL arrays/numerics may need normalization.
           def normalize(value):
               if isinstance(value, dict):
                   return {str(k): normalize(v) for k, v in value.items()}
