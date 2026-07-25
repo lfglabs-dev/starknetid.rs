@@ -1,4 +1,4 @@
-name: Beal signature 3511 paired fixed-11 probes
+name: Beal signature 3511 paired fixed-11 chain
 
 on:
   push:
@@ -13,31 +13,30 @@ permissions:
   contents: read
 
 concurrency:
-  group: beal-signature3511-paired-${{ github.ref }}
+  group: beal-signature3511-paired-chain-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  paired-prime:
+  paired-chain:
     strategy:
       fail-fast: false
       matrix:
         level: ["2,2", "2,3", "3,2"]
-        prime: [19, 29, 31, 41]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 636e6a77b4cdee82d51149113bb7ea0199acae33
+          ref: c0ea5545e2ca280f7892354ba36a9d471cd869ec
           path: beal
-      - name: Apply paired Galois-conjugate trace condition
+      - name: Intersect four paired split-prime conditions
         run: >-
-          python3 beal/scripts/run_signature_3511_magma_fixed11_split_pair.py
-          --level "${{ matrix.level }}" --prime "${{ matrix.prime }}"
-          > "signature3511-pair-${{ matrix.level }}-${{ matrix.prime }}.json"
+          python3 beal/scripts/run_signature_3511_magma_fixed11_split_pair_chain.py
+          --level "${{ matrix.level }}"
+          > "signature3511-paired-chain-${{ matrix.level }}.json"
       - uses: actions/upload-artifact@v4
         with:
-          name: "signature3511-fixed11-pair-${{ matrix.level }}-${{ matrix.prime }}"
-          path: "signature3511-pair-${{ matrix.level }}-${{ matrix.prime }}.json"
+          name: "signature3511-fixed11-paired-chain-${{ matrix.level }}"
+          path: "signature3511-paired-chain-${{ matrix.level }}.json"
           if-no-files-found: error
