@@ -1,4 +1,4 @@
-name: Beal signature 3511 ramified-order probe
+name: Beal signature 3511 exact-conductor order probe
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: beal-signature3511-ramified-order-${{ github.ref }}
+  group: beal-signature3511-exact-order-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -24,9 +24,9 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 0ef5bc10da6679ff9efc69b483f5cafc3842a381
+          ref: 51222477ab2b7ad8ecb1f0605f8f7137f775db06
           path: beal
-      - name: Realize fixed-11 newspaces on a quaternion algebra ramified at 3 and 5
+      - name: Realize newspaces on the exact-conductor ramified Eichler orders
         working-directory: beal/scripts
         run: >-
           python3 run_signature_3511_magma_ramified_order_probe.py
@@ -36,18 +36,3 @@ jobs:
           name: signature3511-ramified-order
           path: signature3511-ramified-order.json
           if-no-files-found: error
-
-  mod5-irreducibility-replay:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          repository: Th0rgal/beal-conjecture-lean
-          ref: d6917e9f10226f7dc14720b54cb86e79ca792032
-          path: beal
-      - name: Replay the signature-(3,5,11) mod-5 irreducibility certificate
-        working-directory: beal
-        run: |
-          python3 scripts/check_signature_3511_mod5_irreducibility_at3.py --self-test
-          python3 scripts/check_signature_3511_mod5_irreducibility_at3.py
