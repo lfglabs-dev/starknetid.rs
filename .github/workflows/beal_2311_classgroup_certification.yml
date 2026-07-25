@@ -1,0 +1,151 @@
+name: Beal (2,3,11) class-group certification
+
+on:
+  push:
+    branches:
+      - research/beal-2311-classgroup-certification
+    paths:
+      - ".github/workflows/beal_2311_classgroup_certification.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/beal_2311_classgroup_certification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beal-2311-classgroup-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include:
+          - label: 54a1
+            f12: "x^12 - 6*x^10 + 6*x^9 - 6*x^8 - 126*x^7 + 104*x^6 + 468*x^5 + 258*x^4 - 456*x^3 - 1062*x^2 - 774*x - 380"
+          - label: 96a1
+            f12: "x^12 - 4*x^11 - 264*x^7 + 66*x^6 - 132*x^5 - 2112*x^4 - 1320*x^3 - 660*x^2 - 6240*x - 8007"
+          - label: 864a1
+            f12: "x^12 - 6*x^11 + 110*x^9 - 132*x^8 - 528*x^7 + 1100*x^6 + 330*x^5 - 2508*x^4 + 2134*x^3 - 594*x^2 + 456*x - 371"
+          - label: 864b1
+            f12: "x^12 - 6*x^11 + 22*x^9 + 99*x^8 - 396*x^7 + 440*x^6 - 132*x^5 - 6501*x^4 + 33506*x^3 - 23760*x^2 - 92418*x + 193081"
+          - label: 864c1
+            f12: "x^12 - 44*x^9 - 264*x^8 - 264*x^7 - 2266*x^6 - 4488*x^5 - 264*x^4 - 17644*x^3 - 7128*x^2 + 144*x - 15191"
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      LABEL: ${{ matrix.label }}
+      F12: ${{ matrix.f12 }}
+    steps:
+      - name: Install PARI/GP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pari-gp
+          gp --version-short
+
+      - name: Build the degree-36 field and certify its class group
+        id: certify
+        shell: bash
+        run: |
+          set -u
+          cat > certify.gp <<GP
+          default(parisizemax, 6000000000);
+          default(realprecision, 230);
+          default(nbthreads, 2);
+          default(debug, 1);
+          x='x;
+          F12 = ${F12};
+          G3 = x^3 - 4*x^2 - 160*x - 1264;
+          print("LABEL=${LABEL}");
+          print("F12_IRREDUCIBLE=", polisirreducible(F12));
+          print("G3_IRREDUCIBLE=", polisirreducible(G3));
+          T = polcompositum(G3, F12, 2);
+          print("COMPOSITUM_DEGREE=", poldegree(T));
+          if (poldegree(T) != 36, error("compositum does not have degree 36"));
+          print("PHASE=polredbest-start");
+          Tred = polredbest(T);
+          print("REDUCED_POLYNOMIAL=", Tred);
+          print("PHASE=nfinit-start");
+          NF = nfinit(Tred);
+          print("FIELD_SIGNATURE=", NF.sign);
+          print("FIELD_DISCRIMINANT=", NF.disc);
+          print("PHASE=nfcertify-start");
+          NFbad = nfcertify(NF);
+          print("NFCERTIFY_OBSTRUCTIONS=", NFbad);
+          if (#NFbad, error("maximal-order certification failed"));
+          print("PHASE=bnfinit-start");
+          B = bnfinit(NF, 1, [0,0,0,0,0,1]);
+          print("CLASS_GROUP=", B.clgp);
+          print("REGULATOR=", B.reg);
+          print("PHASE=class-quotient-certification-start");
+          CQ = bnfcertify(B, 1);
+          print("CLASS_QUOTIENT_CERTIFIED=", CQ);
+          if (CQ != 1, error("class-group quotient certification failed"));
+          print("PHASE=full-certification-start");
+          FULL = bnfcertify(B);
+          print("FULL_BNF_CERTIFIED=", FULL);
+          if (FULL != 1, error("full unconditional BNF certification failed"));
+          print("RESULT=UNCONDITIONALLY_CERTIFIED");
+          quit(0);
+          GP
+
+          set +e
+          timeout --signal=TERM --kill-after=60s 19800s gp -q certify.gp 2>&1 | tee "classgroup-${LABEL}.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "exit_status=${status}" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${status}" > "classgroup-${LABEL}.status"
+
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re
+          label = os.environ["LABEL"]
+          log_path = pathlib.Path(f"classgroup-{label}.log")
+          text = log_path.read_text(errors="replace") if log_path.exists() else ""
+          def marker(name):
+              match = re.search(rf"(?:^|\n){re.escape(name)}=(.*)", text)
+              return None if match is None else match.group(1).strip()
+          status_path = pathlib.Path(f"classgroup-{label}.status")
+          exit_status = int(status_path.read_text().strip()) if status_path.exists() else -1
+          body = {
+              "schema_version": 1,
+              "label": label,
+              "source_paper": "Freitas--Naskrecki--Stoll, The generalized Fermat equation with exponents 2, 3, n",
+              "degree12_polynomial": os.environ["F12"],
+              "degree3_polynomial": "x^3-4*x^2-160*x-1264",
+              "compositum_degree": marker("COMPOSITUM_DEGREE"),
+              "reduced_polynomial": marker("REDUCED_POLYNOMIAL"),
+              "field_signature": marker("FIELD_SIGNATURE"),
+              "field_discriminant": marker("FIELD_DISCRIMINANT"),
+              "nfcertify_obstructions": marker("NFCERTIFY_OBSTRUCTIONS"),
+              "class_group": marker("CLASS_GROUP"),
+              "class_quotient_certified": marker("CLASS_QUOTIENT_CERTIFIED"),
+              "full_bnf_certified": marker("FULL_BNF_CERTIFIED"),
+              "result": marker("RESULT"),
+              "exit_status": exit_status,
+              "complete": exit_status == 0 and marker("RESULT") == "UNCONDITIONALLY_CERTIFIED",
+              "log_sha256": hashlib.sha256(text.encode()).hexdigest(),
+          }
+          encoded = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+          body["certificate_sha256"] = hashlib.sha256(encoded).hexdigest()
+          pathlib.Path(f"classgroup-{label}.json").write_text(json.dumps(body, sort_keys=True, indent=2) + "\n")
+          print(json.dumps(body, sort_keys=True, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beal-2311-classgroup-${{ matrix.label }}
+          path: |
+            certify.gp
+            classgroup-${{ matrix.label }}.log
+            classgroup-${{ matrix.label }}.status
+            classgroup-${{ matrix.label }}.json
+          if-no-files-found: error
+
+      - name: Require unconditional certification
+        if: steps.certify.outputs.exit_status != '0'
+        run: exit 1
