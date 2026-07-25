@@ -1,4 +1,4 @@
-name: Beal signature 3511 exact-conductor order probe
+name: Beal global canonical audit
 
 on:
   push:
@@ -13,26 +13,46 @@ permissions:
   contents: read
 
 concurrency:
-  group: beal-signature3511-exact-order-${{ github.ref }}
+  group: beal-global-canonical-audit-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  ramified-order:
+  replay:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 51222477ab2b7ad8ecb1f0605f8f7137f775db06
+          ref: 97b776a728b66942912a564d47b09e84078e2b1e
           path: beal
-      - name: Realize newspaces on the exact-conductor ramified Eichler orders
-        working-directory: beal/scripts
-        run: >-
-          python3 run_signature_3511_magma_ramified_order_probe.py
-          > ../../signature3511-ramified-order.json
-      - uses: actions/upload-artifact@v4
+      - name: Replay corrected global certificates
+        working-directory: beal
+        run: |
+          python3 scripts/check_global_beal_prime_exponent_reduction.py --self-test
+          python3 scripts/check_global_beal_prime_exponent_reduction.py
+          python3 scripts/check_global_beal_repeated_exponent_audit.py --self-test
+          python3 scripts/check_global_beal_repeated_exponent_audit.py
+          python3 scripts/check_global_beal_one_four_core.py --self-test
+          python3 scripts/check_global_beal_one_four_core.py
+          python3 scripts/check_global_beal_signature457_power_residue.py --self-test
+          python3 scripts/check_global_beal_signature457_power_residue.py
+
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
         with:
-          name: signature3511-ramified-order
-          path: signature3511-ramified-order.json
-          if-no-files-found: error
+          repository: Th0rgal/beal-conjecture-lean
+          ref: 97b776a728b66942912a564d47b09e84078e2b1e
+          path: beal
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: beal
+      - name: Compile global research modules
+        working-directory: beal
+        run: |
+          lake env lean BealUnified/ExponentReduction.lean
+          lake env lean BealUnified/Research/CyclotomicAudit.lean
+          lake env lean BealUnified/Research/Signature457.lean
