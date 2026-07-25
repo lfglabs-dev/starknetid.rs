@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 250e83a7f4bc62506af22e735dd1ae833abda117
+          ref: 133d3ab8eca598b0d7ce32eac107f18cd15fd0c5
           path: beal
       - name: Catch the norm-8 failure and inspect every partial Hecke cache
         run: >-
