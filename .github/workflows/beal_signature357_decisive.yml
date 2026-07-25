@@ -1,4 +1,4 @@
-name: Beal signature 3511 extended paired chain
+name: Beal signature 3511 raw Brandt probes
 
 on:
   push:
@@ -13,30 +13,61 @@ permissions:
   contents: read
 
 concurrency:
-  group: beal-signature3511-extended-paired-${{ github.ref }}
+  group: beal-signature3511-raw-brandt-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  paired-chain:
-    strategy:
-      fail-fast: false
-      matrix:
-        level: ["2,2", "2,3", "3,2"]
+  raw-prime2:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 3e0b233a02365b1a39200518119a87dc15ad3c37
+          ref: 981b505bb85da07c48c54cf1a241fbc5cd2d5523
           path: beal
-      - name: Intersect the extended paired split-prime conditions
+      - name: Compute the level-(3,3) norm-4 cover on the raw Brandt module
+        working-directory: beal/scripts
         run: >-
-          python3 beal/scripts/run_signature_3511_magma_fixed11_split_pair_extended.py
-          --level "${{ matrix.level }}"
-          > "signature3511-extended-paired-${{ matrix.level }}.json"
+          python3 run_signature_3511_magma_level33_raw_prime2.py
+          > ../../signature3511-level33-raw-prime2.json
       - uses: actions/upload-artifact@v4
         with:
-          name: "signature3511-fixed11-extended-paired-${{ matrix.level }}"
-          path: "signature3511-extended-paired-${{ matrix.level }}.json"
+          name: signature3511-level33-raw-prime2
+          path: signature3511-level33-raw-prime2.json
           if-no-files-found: error
+
+  finite-brandt-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: Th0rgal/beal-conjecture-lean
+          ref: 981b505bb85da07c48c54cf1a241fbc5cd2d5523
+          path: beal
+      - name: Probe direct finite-field Brandt construction
+        working-directory: beal/scripts
+        run: >-
+          python3 run_signature_3511_magma_finite_brandt_probe.py
+          > ../../signature3511-finite-brandt-api.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signature3511-finite-brandt-api
+          path: signature3511-finite-brandt-api.json
+          if-no-files-found: error
+
+  mod5-irreducibility-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: Th0rgal/beal-conjecture-lean
+          ref: d6917e9f10226f7dc14720b54cb86e79ca792032
+          path: beal
+      - name: Replay the signature-(3,5,11) mod-5 irreducibility certificate
+        working-directory: beal
+        run: |
+          python3 scripts/check_signature_3511_mod5_irreducibility_at3.py --self-test
+          python3 scripts/check_signature_3511_mod5_irreducibility_at3.py
