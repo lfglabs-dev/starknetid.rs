@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - research/beal-heckeimages-probe
+  pull_request:
+    paths:
+      - ".github/workflows/beal_heckeimages_probe.yml"
   workflow_dispatch:
 
 permissions:
