@@ -1,0 +1,36 @@
+name: Beal signature 357 raw Hecke restriction probe
+
+on:
+  push:
+    branches:
+      - research/beal-signature357-probe
+    paths:
+      - ".github/workflows/beal_signature357_raw_restriction_probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beal-signature357-raw-restriction
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: Th0rgal/beal-conjecture-lean
+          ref: 767d4aadc25eac4dd4493c53c1accd30f8e7503e
+          path: beal
+      - name: Compare raw and ordinary Hecke restrictions
+        run: >-
+          python3 beal/scripts/run_signature_357_magma_hecke_raw_restriction_probe.py
+          > magma-hecke-raw-restriction.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signature357-magma-hecke-raw-restriction
+          path: magma-hecke-raw-restriction.json
+          if-no-files-found: error
