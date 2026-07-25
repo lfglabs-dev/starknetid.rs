@@ -1,0 +1,92 @@
+name: Beal signature 357 decisive probes
+
+on:
+  push:
+    branches:
+      - research/beal-signature357-probe
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beal-signature357-decisive
+  cancel-in-progress: true
+
+jobs:
+  fixed7-level33:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: Th0rgal/beal-conjecture-lean
+          ref: 0a6acaf7faa0d28ae2e37f6cb55605d1b285ffc1
+          path: beal
+      - name: Compute fixed-7 level-(3,3) prime-2 parity decomposition
+        run: >-
+          python3 beal/scripts/run_signature_357_magma_fixed7_prime2_trace.py
+          > fixed7-level33-prime2-parity.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signature357-fixed7-level33-prime2-parity
+          path: fixed7-level33-prime2-parity.json
+          if-no-files-found: error
+
+  mod5-level:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair: "3,0"
+            norm: 19683
+          - pair: "3,1"
+            norm: 137781
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: Th0rgal/beal-conjecture-lean
+          ref: 376beb5d1271cdf4e4e9b88ff896d8240e8e6c22
+          path: beal
+      - name: Compute mod-5 norm-8 parity decomposition
+        working-directory: beal/scripts
+        run: >-
+          python3 run_signature_357_magma_mod5_norm8_probe.py
+          --pair "${{ matrix.pair }}"
+          > "../../mod5-norm8-${{ matrix.norm }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signature357-mod5-norm8-${{ matrix.norm }}
+          path: "mod5-norm8-${{ matrix.norm }}.json"
+          if-no-files-found: error
+
+  lmfdb-level91125:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch any stored LMFDB packet rows at level norm 91125
+        run: |
+          python3 - <<'PY'
+          import json, urllib.parse, urllib.request
+          base='https://www.lmfdb.org/api/hmf_forms/'
+          params={
+            'field_label':'s2.2.5.1',
+            'level_norm':'i91125',
+            '_format':'json',
+            '_fields':'label,level_norm,level_ideal,dimension,is_CM,is_base_change',
+          }
+          url=base+'?'+urllib.parse.urlencode(params)
+          with urllib.request.urlopen(url,timeout=120) as response:
+              raw=response.read()
+          open('lmfdb-level91125.json','wb').write(raw)
+          value=json.loads(raw)
+          rows=value.get('data',value if isinstance(value,list) else [])
+          print(json.dumps({'url':url,'row_count':len(rows)},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signature357-lmfdb-level91125
+          path: lmfdb-level91125.json
+          if-no-files-found: error
