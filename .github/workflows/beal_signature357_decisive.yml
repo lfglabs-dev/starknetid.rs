@@ -17,21 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  mod5-level19683-hecke-cache:
+  mod5-level19683-al:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 133d3ab8eca598b0d7ce32eac107f18cd15fd0c5
+          ref: 18529820654133c56079b4f0c1c8ed6c08f63d6b
           path: beal
-      - name: Catch the norm-8 failure and inspect every partial Hecke cache
+      - name: Inspect the opaque AL attribute of the independent newspace
         run: >-
-          python3 beal/scripts/run_signature_357_magma_mod5_19683_hecke_cache_probe.py
-          > mod5-19683-hecke-cache.json
+          python3 beal/scripts/run_signature_357_magma_mod5_19683_al_probe.py
+          > mod5-19683-al.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-mod5-19683-hecke-cache
-          path: mod5-19683-hecke-cache.json
+          name: signature357-mod5-19683-al
+          path: mod5-19683-al.json
           if-no-files-found: error
