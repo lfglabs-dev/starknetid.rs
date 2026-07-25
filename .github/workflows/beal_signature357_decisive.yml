@@ -17,21 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  mod5-level19683-al:
+  mod5-level137781-twist-corrected:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 18529820654133c56079b4f0c1c8ed6c08f63d6b
+          ref: 7056e98fa0ceeee10b364acd001d5f486252488d
           path: beal
-      - name: Inspect the opaque AL attribute of the independent newspace
+      - name: Apply eta7-corrected local polynomials and semilinear relations
         run: >-
-          python3 beal/scripts/run_signature_357_magma_mod5_19683_al_probe.py
-          > mod5-19683-al.json
+          python3 beal/scripts/run_signature_357_magma_mod5_137781_semilinear_chain_twisted.py
+          > mod5-137781-twist-corrected.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-mod5-19683-al
-          path: mod5-19683-al.json
+          name: signature357-mod5-137781-twist-corrected
+          path: mod5-137781-twist-corrected.json
           if-no-files-found: error
