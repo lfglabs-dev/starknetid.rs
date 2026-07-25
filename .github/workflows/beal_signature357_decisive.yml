@@ -17,21 +17,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  mod5-level19683-definite:
+  mod5-level19683-ambient-raw:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: bb7be2b475438071f9afedd3f2475e82cf1fdefe
+          ref: 2e5e52289b488909935fd2bd0786b5fb7c60f037
           path: beal
-      - name: Force the newspace onto a definite quaternion order
+      - name: Inspect ambient raw Hecke and degeneracy maps
         run: >-
-          python3 beal/scripts/run_signature_357_magma_mod5_19683_definite_probe.py
-          > mod5-19683-definite.json
+          python3 beal/scripts/run_signature_357_magma_mod5_19683_ambient_raw_probe.py
+          > mod5-19683-ambient-raw.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature357-mod5-19683-definite
-          path: mod5-19683-definite.json
+          name: signature357-mod5-19683-ambient-raw
+          path: mod5-19683-ambient-raw.json
           if-no-files-found: error
