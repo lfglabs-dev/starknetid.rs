@@ -67,26 +67,70 @@ jobs:
 
   lmfdb-level91125:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Fetch any stored LMFDB packet rows at level norm 91125
+      - name: Query the official read-only LMFDB SQL mirror
         run: |
+          python3 -m pip install --quiet psycopg2-binary
           python3 - <<'PY'
-          import json, urllib.parse, urllib.request
-          base='https://www.lmfdb.org/api/hmf_forms/'
-          params={
-            'field_label':'s2.2.5.1',
-            'level_norm':'i91125',
-            '_format':'json',
-            '_fields':'label,level_norm,level_ideal,dimension,is_CM,is_base_change',
+          import json
+          import psycopg2
+
+          conn = psycopg2.connect(
+              host='devmirror.lmfdb.xyz', port=5432,
+              dbname='lmfdb', user='lmfdb', password='lmfdb',
+              connect_timeout=30,
+          )
+          conn.set_session(readonly=True, autocommit=True)
+          result = {
+              'source': 'official LMFDB read-only SQL mirror',
+              'field_label': '2.2.5.1',
+              'level_norm': 91125,
           }
-          url=base+'?'+urllib.parse.urlencode(params)
-          with urllib.request.urlopen(url,timeout=120) as response:
-              raw=response.read()
-          open('lmfdb-level91125.json','wb').write(raw)
-          value=json.loads(raw)
-          rows=value.get('data',value if isinstance(value,list) else [])
-          print(json.dumps({'url':url,'row_count':len(rows)},sort_keys=True))
+          with conn.cursor() as cur:
+              cur.execute("""
+                  SELECT column_name, data_type
+                  FROM information_schema.columns
+                  WHERE table_schema='public' AND table_name='hmf_hecke'
+                  ORDER BY ordinal_position
+              """)
+              result['hmf_hecke_schema'] = [dict(name=r[0], type=r[1]) for r in cur.fetchall()]
+
+              cur.execute("""
+                  SELECT label, level_label, level_norm, level_ideal,
+                         dimension, is_cm, is_base_change
+                  FROM hmf_forms
+                  WHERE field_label=%s AND level_norm=%s
+                  ORDER BY level_label, label
+              """, ('2.2.5.1', 91125))
+              cols = [d.name for d in cur.description]
+              forms = [dict(zip(cols, row)) for row in cur.fetchall()]
+              result['forms'] = forms
+              result['form_count'] = len(forms)
+
+              labels = [row['label'] for row in forms]
+              if labels:
+                  cur.execute("SELECT * FROM hmf_hecke WHERE label = ANY(%s) ORDER BY label", (labels,))
+                  hcols = [d.name for d in cur.description]
+                  result['hecke_rows'] = [dict(zip(hcols, row), default=str) if False else dict(zip(hcols, row)) for row in cur.fetchall()]
+              else:
+                  result['hecke_rows'] = []
+
+          conn.close()
+
+          # PostgreSQL arrays/numerics may need normalization.
+          def normalize(value):
+              if isinstance(value, dict):
+                  return {str(k): normalize(v) for k, v in value.items()}
+              if isinstance(value, (list, tuple)):
+                  return [normalize(v) for v in value]
+              if value is None or isinstance(value, (str, int, float, bool)):
+                  return value
+              return str(value)
+
+          with open('lmfdb-level91125.json', 'w', encoding='utf-8') as f:
+              json.dump(normalize(result), f, indent=2, sort_keys=True)
+          print(json.dumps({'form_count': result['form_count'], 'hecke_row_count': len(result['hecke_rows'])}, sort_keys=True))
           PY
       - uses: actions/upload-artifact@v4
         with:
