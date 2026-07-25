@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - research/beal-signature357-probe
+  pull_request:
+    paths:
+      - ".github/workflows/beal_signature357_decisive.yml"
   workflow_dispatch:
 
 permissions:
