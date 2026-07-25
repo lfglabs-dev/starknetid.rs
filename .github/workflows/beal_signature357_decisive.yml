@@ -1,4 +1,4 @@
-name: Beal signature 3511 raw Brandt probes
+name: Beal signature 3511 ramified-order probe
 
 on:
   push:
@@ -13,28 +13,28 @@ permissions:
   contents: read
 
 concurrency:
-  group: beal-signature3511-raw-brandt-${{ github.ref }}
+  group: beal-signature3511-ramified-order-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  raw-prime2:
+  ramified-order:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 219b0587aae91d5a3972c909834986bc62f881d2
+          ref: 0ef5bc10da6679ff9efc69b483f5cafc3842a381
           path: beal
-      - name: Compute the level-(3,3) norm-4 cover after freeing rational spaces
+      - name: Realize fixed-11 newspaces on a quaternion algebra ramified at 3 and 5
         working-directory: beal/scripts
         run: >-
-          python3 run_signature_3511_magma_level33_raw_prime2.py
-          > ../../signature3511-level33-raw-prime2.json
+          python3 run_signature_3511_magma_ramified_order_probe.py
+          > ../../signature3511-ramified-order.json
       - uses: actions/upload-artifact@v4
         with:
-          name: signature3511-level33-raw-prime2
-          path: signature3511-level33-raw-prime2.json
+          name: signature3511-ramified-order
+          path: signature3511-ramified-order.json
           if-no-files-found: error
 
   mod5-irreducibility-replay:
