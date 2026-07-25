@@ -24,9 +24,9 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: 2e5e52289b488909935fd2bd0786b5fb7c60f037
+          ref: 459324defa4236537519fad73b70299aef8a9ab1
           path: beal
-      - name: Inspect ambient raw Hecke and degeneracy maps
+      - name: Force construction, inspect degeneracy maps and compute ambient raw Hecke
         run: >-
           python3 beal/scripts/run_signature_357_magma_mod5_19683_ambient_raw_probe.py
           > mod5-19683-ambient-raw.json
