@@ -1,4 +1,4 @@
-name: Beal signature 3511 paired fixed-11 chain
+name: Beal signature 3511 extended paired chain
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: beal-signature3511-paired-chain-${{ github.ref }}
+  group: beal-signature3511-extended-paired-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,15 +28,15 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: Th0rgal/beal-conjecture-lean
-          ref: c0ea5545e2ca280f7892354ba36a9d471cd869ec
+          ref: 3e0b233a02365b1a39200518119a87dc15ad3c37
           path: beal
-      - name: Intersect four paired split-prime conditions
+      - name: Intersect the extended paired split-prime conditions
         run: >-
-          python3 beal/scripts/run_signature_3511_magma_fixed11_split_pair_chain.py
+          python3 beal/scripts/run_signature_3511_magma_fixed11_split_pair_extended.py
           --level "${{ matrix.level }}"
-          > "signature3511-paired-chain-${{ matrix.level }}.json"
+          > "signature3511-extended-paired-${{ matrix.level }}.json"
       - uses: actions/upload-artifact@v4
         with:
-          name: "signature3511-fixed11-paired-chain-${{ matrix.level }}"
-          path: "signature3511-paired-chain-${{ matrix.level }}.json"
+          name: "signature3511-fixed11-extended-paired-${{ matrix.level }}"
+          path: "signature3511-extended-paired-${{ matrix.level }}.json"
           if-no-files-found: error
